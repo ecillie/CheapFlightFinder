@@ -1,22 +1,28 @@
-name: Daily Cape Town Flight Search
+name: Configurable Flight Search
 
 on:
   schedule:
-    - cron: "0 8 * * *"
-      timezone: "America/New_York"
+    # Check hourly; config.json decides when a report is actually due.
+    - cron: "17 * * * *"
 
   workflow_dispatch:
+
+concurrency:
+  group: daily-flight-search-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   search-flights:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,15 +30,38 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      - name: Check configured schedule
+        id: schedule
+        env:
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+        run: python -m src.scheduler
+
       - name: Install dependencies
+        if: steps.schedule.outputs.should_run == 'true'
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run flight tracker
+        if: steps.schedule.outputs.should_run == 'true'
         env:
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
         run: python main.py
+
+      - name: Persist tracker data
+        if: always() && steps.schedule.outputs.should_run == 'true'
+        run: |
+          if git diff --quiet -- data/price_history.json data/run_state.json; then
+            echo "No tracker data changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/price_history.json data/run_state.json
+          git commit -m "Update flight tracker data"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

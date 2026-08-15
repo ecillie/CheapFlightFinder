@@ -1,0 +1,1 @@
+"""CheapFlightFinder application package."""

@@ -1,3 +1,7 @@
+"""Score and rank normalized flights by practical deal quality."""
+
+from collections.abc import Iterable
+
 from src.models import FlightDeal
 
 
@@ -7,38 +11,27 @@ EXTRA_DURATION_PENALTY_PER_MINUTE = 0.20
 
 
 def calculate_score(flight: FlightDeal) -> float:
+    """Return a deal score where lower values indicate better flights.
+
+    The base score is the price. Each stop adds 100 points, and every minute
+    beyond 20 hours adds 0.2 points.
     """
-    Lower score = better flight.
-
-    We favor:
-    - cheaper flights
-    - fewer stops
-    - shorter durations
-    """
-
-    score = flight.price
-
-    score += flight.stops * STOP_PENALTY
 
     extra_minutes = max(
-        0,
-        flight.duration_minutes
-        - LONG_FLIGHT_THRESHOLD_MINUTES,
+        0, flight.duration_minutes - LONG_FLIGHT_THRESHOLD_MINUTES
     )
-
-    score += (
-        extra_minutes
-        * EXTRA_DURATION_PENALTY_PER_MINUTE
+    score = (
+        flight.price
+        + (flight.stops * STOP_PENALTY)
+        + (extra_minutes * EXTRA_DURATION_PENALTY_PER_MINUTE)
     )
 
     return round(score, 2)
 
 
 def rank_flights(
-    flights: list[FlightDeal],
+    flights: Iterable[FlightDeal],
 ) -> list[FlightDeal]:
+    """Return flights ordered from lowest to highest deal score."""
 
-    return sorted(
-        flights,
-        key=calculate_score,
-    )
+    return sorted(flights, key=calculate_score)
