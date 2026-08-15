@@ -1,0 +1,23 @@
+{
+    "origins": [
+      "BOS",
+      "JFK",
+      "EWR",
+      "PHL",
+      "IAD",
+      "CLT",
+      "ATL",
+      "MIA",
+      "PHX"
+    ],
+    "destination": "CPT",
+    "currency": "USD",
+    "travel_class": "economy",
+    "max_stops": 2,
+    "max_price": 1500,
+    "trip_durations": [
+      2,
+      3
+    ],
+    "results_per_email": 10
+  }
