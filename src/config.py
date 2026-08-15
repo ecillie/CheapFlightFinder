@@ -73,8 +73,9 @@ def load_secrets() -> Secrets:
 
     load_dotenv()
 
+    serpapi_key = os.getenv("SERPAPI_KEY") or os.getenv("SERPAI_KEY")
     values = {
-        "SERPAPI_KEY": os.getenv("SERPAPI_KEY"),
+        "SERPAPI_KEY (or SERPAI_KEY)": serpapi_key,
         "EMAIL_ADDRESS": os.getenv("EMAIL_ADDRESS"),
         "EMAIL_APP_PASSWORD": os.getenv("EMAIL_APP_PASSWORD"),
         "EMAIL_RECIPIENT": os.getenv("EMAIL_RECIPIENT"),
@@ -87,7 +88,7 @@ def load_secrets() -> Secrets:
         )
 
     return Secrets(
-        serpapi_key=values["SERPAPI_KEY"] or "",
+        serpapi_key=serpapi_key or "",
         email_address=values["EMAIL_ADDRESS"] or "",
         email_app_password=values["EMAIL_APP_PASSWORD"] or "",
         email_recipient=values["EMAIL_RECIPIENT"] or "",

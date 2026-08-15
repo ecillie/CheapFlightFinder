@@ -80,6 +80,7 @@ In your fork, open **Settings → Secrets and variables → Actions → New repo
 | `EMAIL_RECIPIENT` | The address that receives reports |
 
 GitHub's [Actions secrets guide](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets) has screenshots and additional options. Never put credentials directly in `config.json`, the workflow file, or a commit.
+The workflow also accepts the legacy misspelling `SERPAI_KEY` for existing forks, although new forks should use `SERPAPI_KEY`.
 
 ### 5. Enable and test the workflow
 
