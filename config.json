@@ -1,6 +1,6 @@
 {
   "schedule": {
-    "every_hours": 24
+    "every_hours": 23
   },
   "results_per_search": 10,
   "searches": [
