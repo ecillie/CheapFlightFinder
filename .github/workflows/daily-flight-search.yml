@@ -3,7 +3,7 @@ name: Configurable Flight Search
 on:
   schedule:
     # Check hourly; config.json decides when a report is actually due.
-    - cron: "17 * * * *"
+    - cron: "17 9 * * *"
 
   workflow_dispatch:
 
@@ -20,12 +20,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
