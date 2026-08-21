@@ -9,11 +9,12 @@ CheapFlightFinder searches flexible travel dates with the SerpApi Google Travel 
 - Supports weekend, one-week, and two-week flexible trips.
 - Filters by price, cabin, and maximum stops.
 - Combines every configured search into one email.
+- Shows best-fare price trends from the saved history for each trip length.
 - Runs automatically through GitHub Actions without a dedicated server.
 - Saves `data/price_history.json` after successful reports.
 - Controls report frequency through `schedule.every_hours` in `config.json`.
 
-Each configured trip length uses one SerpApi search. For example, two search profiles with two trip lengths each use four API searches whenever a report runs.
+Each configured trip length uses one SerpApi search. The included configuration splits nine origin airports into four regional profiles. With two trip lengths per profile, it uses eight API searches per report and typically returns a broader set of deals than sending all nine origins in one request.
 
 ## Fork and set up your own tracker
 
@@ -56,7 +57,7 @@ Edit the file directly on GitHub or clone your fork and edit it locally. The inc
 }
 ```
 
-The example above sends one email containing separate Cape Town and Miami sections.
+The example above sends one email containing separate Cape Town and Miami sections. For a large origin list, divide airports into a few regional profiles. Each profile receives its own result pool and email section, which can surface more options without making a separate API request for every airport.
 
 ### 3. Create the credentials
 
@@ -95,7 +96,7 @@ The workflow checks once per hour, but it installs dependencies, calls SerpApi, 
 | Setting | Required | Meaning |
 | --- | --- | --- |
 | `schedule.every_hours` | No | Hours between successful reports. Defaults to `24`. Minimum is `1`. |
-| `results_per_search` | No | Maximum flights shown for each named search. Defaults to `10`. |
+| `results_per_search` | No | Maximum flights shown for each named search. It does not force SerpApi to return that many. Defaults to `10`. |
 | `searches` | Yes | Non-empty list of independent search profiles. |
 
 Common schedule values:
@@ -125,6 +126,12 @@ To choose the approximate starting time for a daily or weekly interval, trigger 
 | `trip_lengths` | Yes | Any combination of `weekend`, `one_week`, and `two_weeks` |
 
 To search another destination or a different group of origins, add another object to `searches`. To monitor the same route with different constraints—economy under $1,000 and business under $3,000, for example—create two profiles with unique names.
+
+### Price trends in the email
+
+Each search section shows the cheapest current fare for every trip length, its change from the previous successful run, and the range of cheapest fares observed across saved runs. Trends use `data/price_history.json`, so they persist in GitHub Actions and improve as the tracker collects more reports.
+
+When you rename or split a profile, its first trend can fall back to comparable history with the same origin, destination, and currency. After the first successful run under the new name, later comparisons use that profile's own history. Deleting `data/price_history.json` resets all trends.
 
 ## Run locally
 

@@ -5,7 +5,7 @@ from src.emailer import send_email
 from src.flight_parser import parse_all_results
 from src.flight_ranker import rank_flights
 from src.flight_search import search_all_trip_lengths
-from src.history import add_reports_to_history
+from src.history import add_price_trends, add_reports_to_history, load_history
 from src.models import SearchReport
 from src.scheduler import mark_run_completed
 
@@ -32,6 +32,8 @@ def build_reports(config: AppConfig, secrets: Secrets) -> tuple[SearchReport, ..
                 name=search.name,
                 currency=search.currency,
                 flights=tuple(ranked_flights),
+                origins=search.origins,
+                destination=search.destination,
             )
         )
 
@@ -43,7 +45,7 @@ def main() -> None:
 
     config = load_config()
     secrets = load_secrets()
-    reports = build_reports(config, secrets)
+    reports = add_price_trends(build_reports(config, secrets), load_history())
 
     send_email(
         sender=secrets.email_address,

@@ -4,7 +4,7 @@ import smtplib
 from email.message import EmailMessage
 
 from src.flight_ranker import calculate_score
-from src.models import FlightDeal, SearchReport
+from src.models import FlightDeal, PriceTrend, SearchReport
 
 
 SMTP_SERVER = "smtp.gmail.com"
@@ -40,12 +40,58 @@ def build_email_body(
             lines.extend(["No matching flights were found.", ""])
             continue
 
+        lines.extend(_format_price_trends(report.price_trends, report.currency))
+
         for index, flight in enumerate(
             report.flights[:max_results_per_search], start=1
         ):
             lines.extend(_format_flight(index, flight, report.currency))
 
     return "\n".join(lines)
+
+
+def _format_price_trends(
+    trends: tuple[PriceTrend, ...],
+    currency: str,
+) -> list[str]:
+    """Format best-fare movements as a compact report summary."""
+
+    if not trends:
+        return []
+
+    lines = ["Price trends (cheapest fare by run):"]
+    for trend in trends:
+        current = format_price(trend.current_lowest, currency)
+        movement = _format_price_movement(trend, currency)
+        tracked_range = (
+            f"{format_price(trend.tracked_lowest, currency)}–"
+            f"{format_price(trend.tracked_highest, currency)}"
+        )
+        run_label = "run" if trend.tracked_runs == 1 else "runs"
+        lines.append(
+            f"  {trend.trip_length}: {current} now | {movement} | "
+            f"tracked {tracked_range} over {trend.tracked_runs} {run_label}"
+        )
+
+    lines.append("")
+    return lines
+
+
+def _format_price_movement(trend: PriceTrend, currency: str) -> str:
+    """Describe a trend's movement relative to the previous tracker run."""
+
+    change = trend.change_amount
+    percent = trend.change_percent
+    previous_lowest = trend.previous_lowest
+    if change is None or percent is None or previous_lowest is None:
+        return "first tracked result"
+    if change == 0:
+        return "no change vs previous run"
+
+    direction = "↓" if change < 0 else "↑"
+    amount = format_price(abs(change), currency)
+    previous = format_price(previous_lowest, currency)
+    return f"{direction} {amount} ({abs(percent):.1f}%) vs {previous}"
 
 
 def _format_flight(

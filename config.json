@@ -5,16 +5,58 @@
   "results_per_search": 10,
   "searches": [
     {
-      "name": "Cape Town from the US East Coast",
+      "name": "Cape Town from the Northeast",
       "origins": [
         "BOS",
         "JFK",
-        "EWR",
+        "EWR"
+      ],
+      "destination": "CPT",
+      "currency": "USD",
+      "travel_class": "economy",
+      "max_stops": 2,
+      "max_price": 1500,
+      "trip_lengths": [
+        "one_week",
+        "two_weeks"
+      ]
+    },
+    {
+      "name": "Cape Town from the Mid-Atlantic",
+      "origins": [
         "PHL",
-        "IAD",
+        "IAD"
+      ],
+      "destination": "CPT",
+      "currency": "USD",
+      "travel_class": "economy",
+      "max_stops": 2,
+      "max_price": 1500,
+      "trip_lengths": [
+        "one_week",
+        "two_weeks"
+      ]
+    },
+    {
+      "name": "Cape Town from the Southeast",
+      "origins": [
         "CLT",
         "ATL",
-        "MIA",
+        "MIA"
+      ],
+      "destination": "CPT",
+      "currency": "USD",
+      "travel_class": "economy",
+      "max_stops": 2,
+      "max_price": 1500,
+      "trip_lengths": [
+        "one_week",
+        "two_weeks"
+      ]
+    },
+    {
+      "name": "Cape Town from the Southwest",
+      "origins": [
         "PHX"
       ],
       "destination": "CPT",

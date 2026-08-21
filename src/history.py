@@ -1,12 +1,13 @@
 """Persist normalized flight prices between scheduled workflow runs."""
 
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TypeAlias
 
 from src.config import PROJECT_ROOT
-from src.models import FlightDeal, SearchReport
+from src.models import FlightDeal, PriceTrend, SearchReport
 
 
 HistoryEntry: TypeAlias = dict[str, Any]
@@ -48,6 +49,18 @@ def save_history(
     temporary_path.replace(path)
 
 
+def add_price_trends(
+    reports: tuple[SearchReport, ...],
+    history: list[HistoryEntry],
+) -> tuple[SearchReport, ...]:
+    """Return reports enriched with best-fare trends from saved history."""
+
+    return tuple(
+        replace(report, price_trends=_build_report_trends(report, history))
+        for report in reports
+    )
+
+
 def add_reports_to_history(
     reports: tuple[SearchReport, ...],
     path: Path = DEFAULT_HISTORY_PATH,
@@ -64,6 +77,85 @@ def add_reports_to_history(
         )
 
     save_history(history=history, path=path)
+
+
+def _build_report_trends(
+    report: SearchReport,
+    history: list[HistoryEntry],
+) -> tuple[PriceTrend, ...]:
+    """Calculate one best-fare trend for every current trip length."""
+
+    relevant_history = _history_for_report(report, history)
+    trip_lengths = tuple(
+        dict.fromkeys(flight.trip_length for flight in report.flights)
+    )
+    trends: list[PriceTrend] = []
+
+    for trip_length in trip_lengths:
+        current_lowest = min(
+            flight.price
+            for flight in report.flights
+            if flight.trip_length == trip_length
+        )
+        prior_run_lows = _best_fare_by_run(relevant_history, trip_length)
+        previous_lowest = prior_run_lows[-1][1] if prior_run_lows else None
+        tracked_lows = [price for _, price in prior_run_lows] + [current_lowest]
+
+        trends.append(
+            PriceTrend(
+                trip_length=trip_length,
+                current_lowest=current_lowest,
+                previous_lowest=previous_lowest,
+                tracked_lowest=min(tracked_lows),
+                tracked_highest=max(tracked_lows),
+                tracked_runs=len(tracked_lows),
+            )
+        )
+
+    return tuple(trends)
+
+
+def _history_for_report(
+    report: SearchReport,
+    history: list[HistoryEntry],
+) -> list[HistoryEntry]:
+    """Find comparable entries, with a route fallback for renamed profiles."""
+
+    route_matches = [
+        entry
+        for entry in history
+        if entry.get("currency") == report.currency
+        and entry.get("destination") == report.destination
+        and entry.get("origin") in report.origins
+    ]
+    named_matches = [
+        entry for entry in route_matches if entry.get("search_name") == report.name
+    ]
+    return named_matches or route_matches
+
+
+def _best_fare_by_run(
+    history: list[HistoryEntry],
+    trip_length: str,
+) -> list[tuple[str, float]]:
+    """Return chronological best fares for a trip length, one per run."""
+
+    best_by_timestamp: dict[str, float] = {}
+    for entry in history:
+        if entry.get("trip_length") != trip_length:
+            continue
+
+        timestamp = entry.get("searched_at")
+        price = entry.get("price")
+        if not isinstance(timestamp, str) or not isinstance(price, (int, float)):
+            continue
+
+        numeric_price = float(price)
+        previous = best_by_timestamp.get(timestamp)
+        if previous is None or numeric_price < previous:
+            best_by_timestamp[timestamp] = numeric_price
+
+    return sorted(best_by_timestamp.items())
 
 
 def _history_entry(
